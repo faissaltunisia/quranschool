@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام تسجيل الحضور والغياب</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --gold-dark: #8a6820;
+    --emerald: #1a6b4a;
+    --emerald-light: #2d9968;
+    --emerald-dark: #0d3d2a;
+    --cream: #fdf8ed;
+    --cream-dark: #f5edda;
+    --ink: #1a1208;
+    --ink-soft: #3d2e0f;
+    --red: #c0392b;
+    --red-light: #e74c3c;
+    --shadow: rgba(26,18,8,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--emerald-dark);
+    min-height: 100vh;
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  /* Geometric background pattern */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(60deg, transparent, transparent 40px, rgba(201,168,76,0.04) 40px, rgba(201,168,76,0.04) 41px),
+      repeating-linear-gradient(-60deg, transparent, transparent 40px, rgba(201,168,76,0.04) 40px, rgba(201,168,76,0.04) 41px),
+      repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(201,168,76,0.03) 40px, rgba(201,168,76,0.03) 41px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-wrapper {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 60px;
+  }
+
+  /* HEADER */
+  .header {
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+    margin-bottom: 32px;
+    animation: fadeDown 0.7s ease both;
+  }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold), var(--gold-dark));
+    color: var(--ink);
+    padding: 6px 20px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(201,168,76,0.4);
+  }
+
+  .header-title {
+    font-family: 'Amiri', serif;
+    font-size: clamp(26px, 5vw, 42px);
+    color: var(--cream);
+    line-height: 1.3;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  }
+
+  .header-subtitle {
+    font-size: 14px;
+    color: rgba(253,248,237,0.6);
+    margin-top: 6px;
+    font-weight: 300;
+  }
+
+  .header-divider {
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 16px auto 0;
+  }
+
+  /* CARD */
+  .card {
+    width: 100%;
+    max-width: 900px;
+    background: var(--cream);
+    border-radius: 24px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.3);
+    overflow: hidden;
+    animation: fadeUp 0.7s 0.2s ease both;
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, var(--emerald-dark) 0%, var(--emerald) 100%);
+    padding: 28px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-header::after {
+    content: '﷽';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Amiri', serif;
+    font-size: 80px;
+    color: rgba(255,255,255,0.04);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .card-header-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .school-name-display {
+    font-family: 'Amiri', serif;
+    font-size: 22px;
+    color: var(--cream);
+    text-shadow: 0 1px 8px rgba(0,0,0,0.3);
+  }
+
+  .date-display {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 12px;
+    padding: 10px 18px;
+    text-align: center;
+  }
+
+  .date-label {
+    font-size: 10px;
+    color: var(--gold-light);
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .date-value {
+    font-size: 15px;
+    color: var(--cream);
+    font-weight: 700;
+  }
+
+  /* STEPS */
+  .steps-bar {
+    display: flex;
+    background: var(--cream-dark);
+    border-bottom: 2px solid rgba(201,168,76,0.15);
+  }
+
+  .step-tab {
+    flex: 1;
+    padding: 14px 8px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #999;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .step-tab.active {
+    color: var(--emerald);
+    border-bottom-color: var(--emerald);
+    background: white;
+  }
+
+  .step-tab.done {
+    color: var(--gold-dark);
+    border-bottom-color: var(--gold);
+  }
+
+  .step-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: currentColor;
+    color: white;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .step-tab.active .step-num { background: var(--emerald); color: white; }
+  .step-tab.done .step-num { background: var(--gold-dark); color: white; }
+  .step-tab:not(.active):not(.done) .step-num { background: #ccc; }
+
+  /* CONTENT */
+  .card-content {
+    padding: 32px 36px;
+  }
+
+  .step-panel { display: none; }
+  .step-panel.active { display: block; animation: slideIn 0.4s ease; }
+
+  /* STEP 1: Date & Group */
+  .step-title {
+    font-family: 'Amiri', serif;
+    font-size: 20px;
+    color: var(--emerald-dark);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .step-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: linear-gradient(to bottom, var(--gold), var(--emerald));
+    border-radius: 2px;
+    display: block;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .form-input, .form-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid rgba(201,168,76,0.25);
+    border-radius: 12px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    background: white;
+    outline: none;
+    transition: all 0.2s;
+    appearance: none;
+  }
+
+  .form-input:focus, .form-select:focus {
+    border-color: var(--emerald);
+    box-shadow: 0 0 0 3px rgba(26,107,74,0.1);
+  }
+
+  /* GROUP SELECTOR */
+  .group-selector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .group-btn {
+    padding: 20px 12px;
+    border: 2px solid rgba(201,168,76,0.25);
+    border-radius: 16px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-align: center;
+    font-family: 'Cairo', sans-serif;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .group-btn:hover { border-color: var(--gold); transform: translateY(-2px); }
+
+  .group-btn.selected {
+    background: linear-gradient(135deg, var(--emerald-dark), var(--emerald));
+    border-color: var(--emerald);
+    color: white;
+    box-shadow: 0 8px 24px rgba(26,107,74,0.3);
+  }
+
+  .group-btn-letter {
+    font-family: 'Amiri', serif;
+    font-size: 42px;
+    line-height: 1;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 6px;
+    transition: color 0.25s;
+  }
+
+  .group-btn.selected .group-btn-letter { color: var(--gold-light); }
+
+  .group-btn-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    transition: color 0.25s;
+  }
+
+  .group-btn.selected .group-btn-label { color: rgba(253,248,237,0.9); }
+
+  /* SECTION GRID */
+  .section-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .section-btn {
+    padding: 14px 8px;
+    border: 2px solid rgba(201,168,76,0.2);
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    font-family: 'Cairo', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  .section-btn:hover { border-color: var(--gold); background: var(--cream); }
+
+  .section-btn.selected {
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    border-color: var(--gold-dark);
+    color: white;
+    box-shadow: 0 4px 12px rgba(201,168,76,0.4);
+  }
+
+  /* STUDENTS */
+  .attendance-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+  }
+
+  .attendance-info {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .info-chip {
+    background: var(--cream-dark);
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .info-chip .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--emerald);
+  }
+
+  .info-chip.absent .dot { background: var(--red); }
+
+  .select-all-btn {
+    background: none;
+    border: 1px solid rgba(201,168,76,0.3);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .select-all-btn:hover { background: var(--cream-dark); }
+
+  .students-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-left: 4px;
+    margin-bottom: 24px;
+  }
+
+  .students-grid::-webkit-scrollbar { width: 4px; }
+  .students-grid::-webkit-scrollbar-track { background: var(--cream-dark); border-radius: 2px; }
+  .students-grid::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+  .student-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 2px solid rgba(201,168,76,0.15);
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+  }
+
+  .student-card:hover { border-color: rgba(192,57,43,0.3); background: rgba(192,57,43,0.03); }
+
+  .student-card.absent {
+    background: linear-gradient(135deg, rgba(192,57,43,0.08), rgba(231,76,60,0.05));
+    border-color: var(--red);
+    box-shadow: 0 2px 8px rgba(192,57,43,0.15);
+  }
+
+  .student-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--emerald-dark), var(--emerald));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Amiri', serif;
+    font-size: 16px;
+    color: var(--gold-light);
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+
+  .student-card.absent .student-avatar {
+    background: linear-gradient(135deg, var(--red), var(--red-light));
+    color: white;
+  }
+
+  .student-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    flex: 1;
+    line-height: 1.3;
+  }
+
+  .absent-badge {
+    background: var(--red);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 100px;
+    letter-spacing: 0.5px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .student-card.absent .absent-badge { opacity: 1; }
+
+  /* BUTTONS */
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border-radius: 12px;
+    font-family: 'Cairo', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--emerald-dark), var(--emerald));
+    color: white;
+    box-shadow: 0 4px 16px rgba(26,107,74,0.35);
+  }
+
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,107,74,0.45); }
+
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+    color: var(--ink);
+    box-shadow: 0 4px 16px rgba(201,168,76,0.35);
+  }
+
+  .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.5); }
+
+  .btn-outline {
+    background: white;
+    color: var(--ink-soft);
+    border: 2px solid rgba(201,168,76,0.3);
+  }
+
+  .btn-outline:hover { border-color: var(--gold); background: var(--cream); }
+
+  .btn-danger {
+    background: linear-gradient(135deg, #a93226, var(--red));
+    color: white;
+    box-shadow: 0 4px 16px rgba(192,57,43,0.3);
+  }
+
+  .btn-danger:hover { transform: translateY(-2px); }
+
+  /* GITHUB MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+
+  .modal {
+    background: var(--cream);
+    border-radius: 20px;
+    padding: 32px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+    animation: slideUp 0.3s ease;
+    position: relative;
+  }
+
+  .modal-title {
+    font-family: 'Amiri', serif;
+    font-size: 22px;
+    color: var(--emerald-dark);
+    margin-bottom: 6px;
+  }
+
+  .modal-sub {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 24px;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.2s;
+  }
+  .modal-close:hover { color: var(--red); }
+
+  .modal-field { margin-bottom: 16px; }
+  .modal-field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  .modal-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 2px solid rgba(201,168,76,0.25);
+    border-radius: 10px;
+    font-family: 'Cairo', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .modal-input:focus { border-color: var(--emerald); }
+
+  .modal-note {
+    background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  /* SUCCESS */
+  .success-panel {
+    text-align: center;
+    padding: 24px;
+    display: none;
+  }
+
+  .success-panel.show { display: block; animation: bounceIn 0.5s ease; }
+
+  .success-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--emerald-dark), var(--emerald));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 24px rgba(26,107,74,0.4);
+  }
+
+  .success-title {
+    font-family: 'Amiri', serif;
+    font-size: 24px;
+    color: var(--emerald-dark);
+    margin-bottom: 8px;
+  }
+
+  .success-sub { font-size: 14px; color: #777; margin-bottom: 24px; }
+
+  /* SUMMARY BOX */
+  .summary-box {
+    background: linear-gradient(135deg, var(--emerald-dark), var(--emerald));
+    border-radius: 16px;
+    padding: 20px 24px;
+    color: white;
+    margin-bottom: 24px;
+  }
+
+  .summary-title {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    opacity: 0.7;
+    margin-bottom: 12px;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .summary-row:last-child { border: none; }
+
+  .summary-key { font-size: 13px; opacity: 0.85; }
+  .summary-val { font-size: 14px; font-weight: 700; color: var(--gold-light); }
+
+  .absent-names-box {
+    background: rgba(192,57,43,0.08);
+    border: 1px solid rgba(192,57,43,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+
+  .absent-names-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--red);
+    margin-bottom: 10px;
+  }
+
+  .absent-name-tag {
+    display: inline-block;
+    background: rgba(192,57,43,0.1);
+    border: 1px solid rgba(192,57,43,0.25);
+    border-radius: 100px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--red);
+    font-weight: 600;
+    margin: 3px;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--emerald-dark);
+    color: var(--cream);
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    z-index: 999;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    border: 1px solid rgba(201,168,76,0.3);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); border-color: var(--red-light); }
+
+  /* ANIMATIONS */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.8); }
+    60% { transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .card-content { padding: 20px 18px; }
+    .card-header { padding: 20px 18px; }
+    .step-tab span:not(.step-num) { display: none; }
+    .students-grid { grid-template-columns: 1fr 1fr; }
+    .section-grid { grid-template-columns: repeat(3, 1fr); }
+    .settings-panel { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrapper">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">📖 نظام الحضور والغياب الرقمي</div>
+    <h1 class="header-title" id="schoolNameHeader">مدرسة تحفيظ القرآن الكريم</h1>
+    <p class="header-subtitle">سجّل الغياب بسهولة واحفظه فوراً</p>
+    <div class="header-divider"></div>
+  </div>
+
+  <!-- MAIN CARD -->
+  <div class="card">
+
+    <!-- Card Header -->
+    <div class="card-header">
+      <div class="card-header-inner">
+        <div class="school-name-display" id="cardSchoolName">مدرسة تحفيظ القرآن الكريم</div>
+        <div class="date-display">
+          <span class="date-label">تاريخ اليوم</span>
+          <div class="date-value" id="todayDate">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Steps Bar -->
+    <div class="steps-bar">
+      <div class="step-tab active" id="tab1"><span class="step-num">١</span><span>التاريخ والمجموعة</span></div>
+      <div class="step-tab" id="tab2"><span class="step-num">٢</span><span>اختيار الشعبة</span></div>
+      <div class="step-tab" id="tab3"><span class="step-num">٣</span><span>تسجيل الغياب</span></div>
+      <div class="step-tab" id="tab4"><span class="step-num">٤</span><span>الحفظ</span></div>
+    </div>
+
+    <!-- Content -->
+    <div class="card-content">
+
+      <!-- STEP 1 -->
+      <div class="step-panel active" id="step1">
+        <h2 class="step-title">حدد التاريخ واختر المجموعة</h2>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>📅 التاريخ</label>
+            <input type="date" class="form-input" id="attendanceDate">
+          </div>
+          <div class="form-group">
+            <label>👤 اسم المعلم / المشرف</label>
+            <input type="text" class="form-input" id="teacherName" placeholder="أدخل اسمك...">
+          </div>
+        </div>
+
+        <h3 style="font-size:13px;font-weight:700;letter-spacing:1px;color:var(--ink-soft);margin-bottom:14px;">اختر المجموعة</h3>
+        <div class="group-selector">
+          <button class="group-btn" onclick="selectGroup('أ')" id="groupBtn_أ">
+            <span class="group-btn-letter">أ</span>
+            <span class="group-btn-label">المجموعة الأولى</span>
+          </button>
+          <button class="group-btn" onclick="selectGroup('ب')" id="groupBtn_ب">
+            <span class="group-btn-letter">ب</span>
+            <span class="group-btn-label">المجموعة الثانية</span>
+          </button>
+        </div>
+
+        <div class="btn-row" style="margin-top:28px;">
+          <button class="btn btn-primary" onclick="goStep(2)">التالي ← اختر الشعبة</button>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-panel" id="step2">
+        <h2 class="step-title">اختر الشعبة</h2>
+        <p style="font-size:13px;color:#888;margin-bottom:20px;">المجموعة: <strong id="selectedGroupLabel">—</strong></p>
+        <div class="section-grid" id="sectionGrid"></div>
+        <div class="btn-row" style="margin-top:28px;">
+          <button class="btn btn-outline" onclick="goStep(1)">← رجوع</button>
+          <button class="btn btn-primary" onclick="goStep(3)">التالي ← تسجيل الغياب</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step-panel" id="step3">
+        <div class="attendance-header">
+          <div>
+            <h2 class="step-title" style="margin-bottom:4px;">تسجيل الغياب</h2>
+            <p style="font-size:12px;color:#888;">انقر على اسم الطالب لتحديده غائباً</p>
+          </div>
+          <div class="attendance-info">
+            <div class="info-chip"><span class="dot"></span> حاضر: <strong id="presentCount">0</strong></div>
+            <div class="info-chip absent"><span class="dot"></span> غائب: <strong id="absentCount">0</strong></div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+          <button class="select-all-btn" onclick="clearAll()">مسح الكل</button>
+        </div>
+
+        <div class="students-grid" id="studentsGrid"></div>
+
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="goStep(2)">← رجوع</button>
+          <button class="btn btn-primary" onclick="goStep(4)">التالي ← مراجعة وحفظ</button>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step-panel" id="step4">
+        <h2 class="step-title">مراجعة وحفظ السجل</h2>
+
+        <div class="summary-box">
+          <div class="summary-title">ملخص الحضور</div>
+          <div class="summary-row"><span class="summary-key">المدرسة</span><span class="summary-val" id="sum_school">—</span></div>
+          <div class="summary-row"><span class="summary-key">التاريخ</span><span class="summary-val" id="sum_date">—</span></div>
+          <div class="summary-row"><span class="summary-key">المجموعة</span><span class="summary-val" id="sum_group">—</span></div>
+          <div class="summary-row"><span class="summary-key">الشعبة</span><span class="summary-val" id="sum_section">—</span></div>
+          <div class="summary-row"><span class="summary-key">المعلم</span><span class="summary-val" id="sum_teacher">—</span></div>
+          <div class="summary-row"><span class="summary-key">إجمالي الطلاب</span><span class="summary-val" id="sum_total">—</span></div>
+          <div class="summary-row"><span class="summary-key">الحاضرون</span><span class="summary-val" id="sum_present">—</span></div>
+          <div class="summary-row"><span class="summary-key">الغائبون</span><span class="summary-val" id="sum_absent">—</span></div>
+        </div>
+
+        <div class="absent-names-box" id="absentNamesBox" style="display:none;">
+          <div class="absent-names-title">✗ أسماء الغائبين</div>
+          <div id="absentNamesList"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="goStep(3)">← رجوع</button>
+          <button class="btn btn-outline" onclick="downloadJSON()">⬇ تحميل JSON</button>
+          <button class="btn btn-gold" onclick="openGithubModal()">☁ حفظ على GitHub</button>
+        </div>
+      </div>
+
+    </div><!-- /card-content -->
+  </div><!-- /card -->
+
+</div><!-- /page-wrapper -->
+
+<!-- GITHUB MODAL -->
+<div class="modal-overlay" id="githubModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">💾 حفظ على GitHub</div>
+    <div class="modal-sub">يتم رفع ملف JSON إلى المستودع المحدد</div>
+
+    <div class="modal-note">
+      🔒 يتم استرداد GitHub Token بأمان من الخادم عبر Vercel. لا يُعرض التوكن أبداً في المتصفح.
+    </div>
+
+    <div class="modal-field">
+      <label>مسار الملف في المستودع</label>
+      <input class="modal-input" id="githubPath" placeholder="attendance/2025/record.json" value="attendance/">
+    </div>
+
+    <div id="githubStatus" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      <button class="btn btn-gold" onclick="pushToGitHub()" id="pushBtn">🚀 رفع الملف</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== CONFIG ======
+const SCHOOL_NAME = 'مدرسة تحفيظ القرآن الكريم';
+const SECTIONS_A = Array.from({length:11},(_,i)=>`الشعبة ${i+1}أ`);
+const SECTIONS_B = Array.from({length:11},(_,i)=>`الشعبة ${i+1}ب`);
+
+// ====== STATE ======
+let state = {
+  currentStep: 1,
+  selectedGroup: '',
+  selectedSection: '',
+  selectedSectionNum: null,
+  absentStudents: new Set(),  // Set of student IDs
+  students: [],               // [{id, name}] loaded from API
+  date: '',
+  teacher: '',
+  schoolName: SCHOOL_NAME
+};
+
+// ====== INIT ======
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date();
+  const dateStr = today.toISOString().split('T')[0];
+  document.getElementById('attendanceDate').value = dateStr;
+  state.date = dateStr;
+  document.getElementById('todayDate').textContent = today.toLocaleDateString('ar-SA', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('schoolNameHeader').textContent = SCHOOL_NAME;
+  document.getElementById('cardSchoolName').textContent = SCHOOL_NAME;
+});
+
+// ====== STEPS ======
+async function goStep(n) {
+  if (n === 2) {
+    state.date = document.getElementById('attendanceDate').value;
+    state.teacher = document.getElementById('teacherName').value.trim();
+    if (!state.selectedGroup) { showToast('⚠️ اختر المجموعة أولاً', true); return; }
+  }
+  if (n === 3) {
+    if (!state.selectedSection) { showToast('⚠️ اختر الشعبة أولاً', true); return; }
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('step3').classList.add('active');
+    state.currentStep = 3;
+    updateTabs();
+    await renderStudents();
+    return;
+  }
+  if (n === 4) { renderSummary(); }
+
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('step' + n).classList.add('active');
+  state.currentStep = n;
+  updateTabs();
+}
+
+function updateTabs() {
+  for (let i = 1; i <= 4; i++) {
+    const t = document.getElementById('tab' + i);
+    t.classList.remove('active','done');
+    if (i === state.currentStep) t.classList.add('active');
+    else if (i < state.currentStep) t.classList.add('done');
+  }
+}
+
+// ====== GROUP ======
+function selectGroup(g) {
+  state.selectedGroup = g;
+  state.selectedSection = '';
+  state.absentStudents.clear();
+  document.querySelectorAll('.group-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('groupBtn_' + g).classList.add('selected');
+  document.getElementById('selectedGroupLabel').textContent = 'المجموعة ' + g;
+  renderSections();
+}
+
+// ====== SECTIONS ======
+function renderSections() {
+  const sections = state.selectedGroup === 'أ' ? SECTIONS_A : SECTIONS_B;
+  const grid = document.getElementById('sectionGrid');
+  grid.innerHTML = '';
+  sections.forEach(sec => {
+    const btn = document.createElement('button');
+    btn.className = 'section-btn' + (sec === state.selectedSection ? ' selected' : '');
+    btn.textContent = sec;
+    btn.onclick = () => selectSection(sec);
+    grid.appendChild(btn);
+  });
+}
+
+function selectSection(sec) {
+  state.selectedSection = sec;
+  // استخراج رقم الشعبة من الاسم مثل "الشعبة 3أ" → 3
+  const match = sec.match(/(\d+)/);
+  state.selectedSectionNum = match ? parseInt(match[1]) : null;
+  state.absentStudents.clear();
+  state.students = [];
+  document.querySelectorAll('.section-btn').forEach(b => {
+    b.classList.toggle('selected', b.textContent === sec);
+  });
+}
+
+// ====== STUDENTS ======
+async function renderStudents() {
+  const grid = document.getElementById('studentsGrid');
+  grid.innerHTML = '<div style="text-align:center;padding:40px;color:#888;font-size:14px;">⏳ جارٍ تحميل قائمة الطلاب...</div>';
+
+  try {
+    const res = await fetch(`/api/get-students?group=${encodeURIComponent(state.selectedGroup)}&section=${state.selectedSectionNum}`);
+    if (!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    state.students = data.students || [];
+  } catch(e) {
+    grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);font-size:14px;">❌ تعذّر تحميل بيانات الطلاب</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  state.students.forEach(student => {
+    const card = document.createElement('div');
+    card.className = 'student-card' + (state.absentStudents.has(student.id) ? ' absent' : '');
+    card.onclick = () => toggleAbsent(student.id, card);
+    const parts = student.name.split(' ');
+    const initials = (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
+    card.innerHTML = `
+      <div class="student-avatar">${initials}</div>
+      <div class="student-name">${student.name}</div>
+      <span class="absent-badge">غائب</span>
+    `;
+    grid.appendChild(card);
+  });
+  updateCounts();
+}
+
+function toggleAbsent(id, card) {
+  if (state.absentStudents.has(id)) {
+    state.absentStudents.delete(id);
+    card.classList.remove('absent');
+  } else {
+    state.absentStudents.add(id);
+    card.classList.add('absent');
+  }
+  updateCounts();
+}
+
+function updateCounts() {
+  const total = state.students.length;
+  const absent = state.absentStudents.size;
+  document.getElementById('absentCount').textContent = absent;
+  document.getElementById('presentCount').textContent = total - absent;
+}
+
+function clearAll() {
+  state.absentStudents.clear();
+  document.querySelectorAll('.student-card').forEach(c => c.classList.remove('absent'));
+  updateCounts();
+}
+
+// ====== SUMMARY ======
+function renderSummary() {
+  const students = state.students;
+  const absentIds = [...state.absentStudents];
+  const absentNames = students.filter(s => absentIds.includes(s.id)).map(s => s.name);
+
+  document.getElementById('sum_school').textContent = state.schoolName;
+  document.getElementById('sum_date').textContent = state.date;
+  document.getElementById('sum_group').textContent = 'المجموعة ' + state.selectedGroup;
+  document.getElementById('sum_section').textContent = state.selectedSection;
+  document.getElementById('sum_teacher').textContent = state.teacher || 'غير محدد';
+  document.getElementById('sum_total').textContent = students.length;
+  document.getElementById('sum_present').textContent = students.length - absentIds.length;
+  document.getElementById('sum_absent').textContent = absentIds.length;
+
+  const box = document.getElementById('absentNamesBox');
+  const list = document.getElementById('absentNamesList');
+  if (absentNames.length > 0) {
+    box.style.display = 'block';
+    list.innerHTML = absentNames.map(n => `<span class="absent-name-tag">${n}</span>`).join('');
+  } else {
+    box.style.display = 'none';
+  }
+
+  // مسار الغياب: attendance/مجموعة-أ/شعبة-1/2025-01-15.json
+  const groupFolder = state.selectedGroup === 'أ' ? 'group-a' : 'group-b';
+  document.getElementById('githubPath').value = `attendance/${groupFolder}/section-${state.selectedSectionNum}/${state.date}.json`;
+}
+
+// ====== JSON ======
+function buildJSON() {
+  const students = state.students;
+  const absentIds = [...state.absentStudents];
+  const absentNames = students.filter(s => absentIds.includes(s.id)).map(s => s.name);
+  return {
+    metadata: {
+      school: state.schoolName,
+      date: state.date,
+      group: 'المجموعة ' + state.selectedGroup,
+      section: state.selectedSection,
+      teacher: state.teacher || 'غير محدد',
+      recordedAt: new Date().toISOString(),
+      totalStudents: students.length,
+      presentCount: students.length - absentIds.length,
+      absentCount: absentIds.length
+    },
+    students: students.map(s => ({
+      id: s.id,
+      name: s.name,
+      status: state.absentStudents.has(s.id) ? 'غائب' : 'حاضر'
+    })),
+    absent: absentNames
+  };
+}
+
+function downloadJSON() {
+  const data = buildJSON();
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `غياب_${state.date}_${state.selectedSection.replace(/\s/g,'_')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ تم تحميل الملف');
+}
+
+// ====== GITHUB ======
+function openGithubModal() {
+  document.getElementById('githubModal').classList.add('open');
+  document.getElementById('githubStatus').style.display = 'none';
+}
+
+function closeModal() {
+  document.getElementById('githubModal').classList.remove('open');
+}
+
+async function pushToGitHub() {
+  // Fetch token and repo securely from Vercel serverless function
+  let token = '', repo = '';
+  try {
+    const res = await fetch('/api/get-config');
+    if (res.ok) {
+      const data = await res.json();
+      token = data.token || '';
+      repo = data.repo || '';
+    }
+  } catch(e) {}
+
+  const path = document.getElementById('githubPath').value.trim();
+
+  if (!token) { setGithubStatus('error','⚠️ لم يتم العثور على GitHub Token. تأكد من إعداد المتغيرات البيئية في Vercel.'); return; }
+  if (!repo)  { setGithubStatus('error','⚠️ لم يتم العثور على اسم المستودع. تأكد من إعداد GITHUB_REPO في Vercel.'); return; }
+  if (!path) { setGithubStatus('error','⚠️ أدخل مسار الملف'); return; }
+
+  const btn = document.getElementById('pushBtn');
+  btn.textContent = '⏳ جارٍ الرفع...';
+  btn.disabled = true;
+
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(buildJSON(), null, 2))));
+  const filePath = path.endsWith('.json') ? path : path.replace(/\/$/, '') + `/${state.date}_${state.selectedSection.replace(/\s/g,'_')}.json`;
+  const apiUrl = `https://api.github.com/repos/${repo}/contents/${filePath}`;
+
+  try {
+    // Check if file exists to get SHA
+    let sha = null;
+    try {
+      const check = await fetch(apiUrl, { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json' }});
+      if (check.ok) { const d = await check.json(); sha = d.sha; }
+    } catch(e) {}
+
+    const body = {
+      message: `تسجيل غياب: ${state.selectedSection} - ${state.date}`,
+      content,
+      ...(sha ? { sha } : {})
+    };
+
+    const res = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github.v3+json' },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      const d = await res.json();
+      setGithubStatus('success', `✅ تم الحفظ بنجاح!\n📁 ${d.content?.path}`);
+      showToast('✅ تم الرفع إلى GitHub بنجاح');
+    } else {
+      const err = await res.json();
+      setGithubStatus('error', `❌ خطأ: ${err.message}`);
+    }
+  } catch(e) {
+    setGithubStatus('error', '❌ تعذر الاتصال. تحقق من الاتصال بالإنترنت والتوكن.');
+  }
+
+  btn.textContent = '🚀 رفع الملف';
+  btn.disabled = false;
+}
+
+function setGithubStatus(type, msg) {
+  const el = document.getElementById('githubStatus');
+  el.style.display = 'block';
+  el.style.background = type === 'success' ? 'rgba(26,107,74,0.1)' : 'rgba(192,57,43,0.1)';
+  el.style.border = `1px solid ${type === 'success' ? 'rgba(26,107,74,0.3)' : 'rgba(192,57,43,0.3)'}`;
+  el.style.color = type === 'success' ? 'var(--emerald-dark)' : 'var(--red)';
+  el.style.whiteSpace = 'pre-line';
+  el.textContent = msg;
+}
+
+// ====== TOAST ======
+let toastTimer;
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
